@@ -273,6 +273,7 @@ class Agent:
 					raise InterruptedError
 
 				self.message_manager.add_model_output(model_output)
+				
 			except Exception as e:
 				# model call failed, remove last state message from history
 				self.message_manager._remove_last_state_message()
