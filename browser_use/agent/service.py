@@ -428,13 +428,15 @@ class Agent:
 				)
 			)
 			if not self.injected_browser_context:
-				await self.browser_context.close()
+				# await self.browser_context.close()
+				print("not closing context")
 
 			if not self.injected_browser and self.browser:
-				await self.browser.close()
+				# await self.browser.close()
+				print("not closing browser")
 
-			if self.generate_gif:
-				self.create_history_gif()
+			# if self.generate_gif:
+			# 	self.create_history_gif()
 
 	def _too_many_failures(self) -> bool:
 		"""Check if we should stop due to too many failures"""
