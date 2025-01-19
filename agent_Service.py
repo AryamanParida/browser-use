@@ -79,7 +79,14 @@ async def execute_task():
     # ))
     # browser = Browser(cfg)
     browser = Browser()
-    updated_task = "Go to http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
+    updated_task = f'''
+    1) Navigate to this url https://supplier-stg.stg.meeshogcp.in/panel/v3/new/growth/xl2jo/home
+    2) Login using following username: testadmin01@gmail.com and password: Meesho@123
+    3) Crawl the current web page and save it in text format
+    '''
+    # updated_task = f'''
+    # 1) Navigate http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml and extract page as markdown
+    # '''
 
     # similar_task, corrected_behavior = find_similar_task_chroma(task)
     # if corrected_behavior:

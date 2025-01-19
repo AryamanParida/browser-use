@@ -4,7 +4,7 @@ You are a precise browser automation agent that interacts with websites through 
 2. Plan a sequence of actions to accomplish the given task
 3. Respond with valid JSON containing your action sequence and state assessment
 
-Current date and time: 2025-01-19 14:01
+Current date and time: 2025-01-19 17:40
 
 
 INPUT STRUCTURE:
@@ -137,7 +137,11 @@ Remember: Your responses must be valid JSON matching the specified format. Each 
 [{'name': 'AgentOutput', 'args': {'current_state': {'evaluation_previous_goal': 'Unknown - No previous actions to evaluate.', 'memory': '', 'next_goal': 'Obtain task from user'}, 'action': []}, 'id': '', 'type': 'tool_call'}]
 
  HumanMessage 
-Your ultimate task is: Go to http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml. If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.
+Your ultimate task is: 
+    1) Navigate to this url https://supplier-stg.stg.meeshogcp.in/panel/v3/new/growth/xl2jo/home
+    2) Login using following username: testadmin01@gmail.com and password: Meesho@123
+    3) Crawl the current web page and save it in text format
+    . If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.
 
  HumanMessage 
 Current url: about:blank
@@ -150,16 +154,16 @@ empty page
 {
   "current_state": {
     "evaluation_previous_goal": "Unknown - No previous actions to evaluate.",
-    "memory": "Need to navigate to the specified URL to complete the task.",
+    "memory": "Need to navigate to the specified URL and perform login.",
     "next_goal": "Navigate to the specified URL."
   },
   "action": [
     {
       "search_google": {
-        "query": "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
+        "query": "https://supplier-stg.stg.meeshogcp.in/panel/v3/new/growth/xl2jo/home"
       },
       "go_to_url": {
-        "url": "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
+        "url": "https://supplier-stg.stg.meeshogcp.in/panel/v3/new/growth/xl2jo/home"
       },
       "go_back": {},
       "click_element": {
@@ -168,20 +172,20 @@ empty page
       },
       "input_text": {
         "index": 0,
-        "text": "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml",
+        "text": "testadmin01@gmail.com",
         "xpath": null
       },
       "switch_tab": {
         "page_id": 0
       },
       "open_tab": {
-        "url": "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
+        "url": "https://supplier-stg.stg.meeshogcp.in/panel/v3/new/growth/xl2jo/home"
       },
       "extract_content": {
         "include_links": false
       },
       "done": {
-        "text": "Navigated to the specified URL."
+        "text": "Successfully navigated to the URL, logged in, and extracted the page content."
       },
       "scroll_down": {
         "amount": null
@@ -190,17 +194,17 @@ empty page
         "amount": null
       },
       "send_keys": {
-        "keys": "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
+        "keys": "Enter"
       },
       "scroll_to_text": {
-        "text": "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
+        "text": "Login"
       },
       "get_dropdown_options": {
         "index": 0
       },
       "select_dropdown_option": {
         "index": 0,
-        "text": "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
+        "text": "Option"
       }
     }
   ]
