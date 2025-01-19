@@ -35,9 +35,9 @@ chroma_client = chromadb.Client()
 task_memory_collection = chroma_client.get_or_create_collection(name="task_memory")
 
 key = os.getenv("key", "")
+print(key)
 OPENAPI_KEY = SecretStr(key)
-
-llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.0, api_key=OPENAPI_KEY)
+llm = ChatOpenAI(model='gpt-4o', temperature=0.0, api_key=OPENAPI_KEY)
 
 class TaskRequest(BaseModel):
     task: str
@@ -79,7 +79,7 @@ async def execute_task():
     # ))
     # browser = Browser(cfg)
     browser = Browser()
-    updated_task = "Go to x.com"
+    updated_task = "Go to http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
 
     # similar_task, corrected_behavior = find_similar_task_chroma(task)
     # if corrected_behavior:
@@ -120,8 +120,8 @@ async def execute_task_endpoint():
     try:
         # task_request.task="Go to x.com"
         # await execute_task(task_request.task)
-        await execute_task()
-        return {"message": "Task executed successfully"}
+        resp=await execute_task()
+        # return {"message": "Task executed successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -1,0 +1,316 @@
+ SystemMessage 
+You are a precise browser automation agent that interacts with websites through structured commands. Your role is to:
+1. Analyze the provided webpage elements and structure
+2. Plan a sequence of actions to accomplish the given task
+3. Respond with valid JSON containing your action sequence and state assessment
+
+Current date and time: 2025-01-19 14:01
+
+
+INPUT STRUCTURE:
+1. Current URL: The webpage you're currently on
+2. Available Tabs: List of open browser tabs
+3. Interactive Elements: List in the format:
+   index[:]<element_type>element_text</element_type>
+   - index: Numeric identifier for interaction
+   - element_type: HTML element type (button, input, etc.)
+   - element_text: Visible text or element description
+
+Example:
+33[:]<button>Submit Form</button>
+_[:] Non-interactive text
+
+
+Notes:
+- Only elements with numeric indexes are interactive
+- _[:] elements provide context but cannot be interacted with
+
+
+
+1. RESPONSE FORMAT: You must ALWAYS respond with valid JSON in this exact format:
+   {
+     "current_state": {
+       "evaluation_previous_goal": "Success|Failed|Unknown - Analyze the current elements and the image to check if the previous goals/actions are successful like intended by the task. Ignore the action result. The website is the ground truth. Also mention if something unexpected happened like new suggestions in an input field. Shortly state why/why not",
+       "memory": "Description of what has been done and what you need to remember until the end of the task",
+       "next_goal": "What needs to be done with the next actions"
+     },
+     "action": [
+       {
+         "one_action_name": {
+           // action-specific parameter
+         }
+       },
+       // ... more actions in sequence
+     ]
+   }
+
+2. ACTIONS: You can specify multiple actions in the list to be executed in sequence. But always specify only one action name per item. 
+
+   Common action sequences:
+   - Form filling: [
+       {"input_text": {"index": 1, "text": "username"}},
+       {"input_text": {"index": 2, "text": "password"}},
+       {"click_element": {"index": 3}}
+     ]
+   - Navigation and extraction: [
+       {"open_new_tab": {}},
+       {"go_to_url": {"url": "https://example.com"}},
+       {"extract_page_content": {}}
+     ]
+
+
+3. ELEMENT INTERACTION:
+   - Only use indexes that exist in the provided element list
+   - Each element has a unique index number (e.g., "33[:]<button>")
+   - Elements marked with "_[:]" are non-interactive (for context only)
+
+4. NAVIGATION & ERROR HANDLING:
+   - If no suitable elements exist, use other functions to complete the task
+   - If stuck, try alternative approaches
+   - Handle popups/cookies by accepting or closing them
+   - Use scroll to find elements you are looking for
+
+5. TASK COMPLETION:
+   - Use the done action as the last action as soon as the task is complete
+   - Don't hallucinate actions
+   - If the task requires specific information - make sure to include everything in the done function. This is what the user will see.
+   - If you are running out of steps (current step), think about speeding it up, and ALWAYS use the done action as the last action.
+
+6. VISUAL CONTEXT:
+   - When an image is provided, use it to understand the page layout
+   - Bounding boxes with labels correspond to element indexes
+   - Each bounding box and its label have the same color
+   - Most often the label is inside the bounding box, on the top right
+   - Visual context helps verify element locations and relationships
+   - sometimes labels overlap, so use the context to verify the correct element
+
+7. Form filling:
+   - If you fill an input field and your action sequence is interrupted, most often a list with suggestions popped up under the field and you need to first select the right element from the suggestion list.
+
+8. ACTION SEQUENCING:
+   - Actions are executed in the order they appear in the list 
+   - Each action should logically follow from the previous one
+   - If the page changes after an action, the sequence is interrupted and you get the new state.
+   - If content only disappears the sequence continues.
+   - Only provide the action sequence until you think the page will change.
+   - Try to be efficient, e.g. fill forms at once, or chain actions where nothing changes on the page like saving, extracting, checkboxes...
+   - only use multiple actions if it makes sense. 
+
+
+   - use maximum 10 actions per sequence
+
+Functions:
+Search Google in the current tab: 
+{search_google: {'query': {'type': 'string'}}}
+Navigate to URL in the current tab: 
+{go_to_url: {'url': {'type': 'string'}}}
+Go back: 
+{go_back: {}}
+Click element: 
+{click_element: {'index': {'type': 'integer'}, 'xpath': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None}}}
+Input text into a input interactive element: 
+{input_text: {'index': {'type': 'integer'}, 'text': {'type': 'string'}, 'xpath': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None}}}
+Switch tab: 
+{switch_tab: {'page_id': {'type': 'integer'}}}
+Open url in new tab: 
+{open_tab: {'url': {'type': 'string'}}}
+Extract page content to get the pure text or markdown with links if include_links is set to true: 
+{extract_content: {'include_links': {'type': 'boolean'}}}
+Complete task: 
+{done: {'text': {'type': 'string'}}}
+Scroll down the page by pixel amount - if no amount is specified, scroll down one page: 
+{scroll_down: {'amount': {'anyOf': [{'type': 'integer'}, {'type': 'null'}], 'default': None}}}
+Scroll up the page by pixel amount - if no amount is specified, scroll up one page: 
+{scroll_up: {'amount': {'anyOf': [{'type': 'integer'}, {'type': 'null'}], 'default': None}}}
+Send strings of special keys like Backspace, Insert, PageDown, Delete, Enter, Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard.press. Be aware of different operating systems and their shortcuts: 
+{send_keys: {'keys': {'type': 'string'}}}
+If you dont find something which you want to interact with, scroll to it: 
+{scroll_to_text: {'text': {'type': 'string'}}}
+Get all options from a native dropdown: 
+{get_dropdown_options: {'index': {'type': 'integer'}}}
+Select dropdown option for interactive element index by the text of the option you want to select: 
+{select_dropdown_option: {'index': {'type': 'integer'}, 'text': {'type': 'string'}}}
+
+Remember: Your responses must be valid JSON matching the specified format. Each action in the sequence must be valid.
+
+ AIMessage 
+[{'name': 'AgentOutput', 'args': {'current_state': {'evaluation_previous_goal': 'Unknown - No previous actions to evaluate.', 'memory': '', 'next_goal': 'Obtain task from user'}, 'action': []}, 'id': '', 'type': 'tool_call'}]
+
+ HumanMessage 
+Your ultimate task is: Go to http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml. If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.
+
+ AIMessage 
+[{'name': 'AgentOutput', 'args': {'current_state': {'evaluation_previous_goal': 'Unknown - No previous actions to evaluate.', 'memory': 'Need to navigate to the specified URL to complete the task.', 'next_goal': 'Navigate to the specified URL.'}, 'action': [{'search_google': {'query': 'http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml'}, 'go_to_url': {'url': 'http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml'}, 'go_back': {}, 'click_element': {'index': 0, 'xpath': None}, 'input_text': {'index': 0, 'text': 'http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml', 'xpath': None}, 'switch_tab': {'page_id': 0}, 'open_tab': {'url': 'http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml'}, 'extract_content': {'include_links': False}, 'done': {'text': 'Navigated to the specified URL.'}, 'scroll_down': {'amount': None}, 'scroll_up': {'amount': None}, 'send_keys': {'keys': 'http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml'}, 'scroll_to_text': {'text': 'http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml'}, 'get_dropdown_options': {'index': 0}, 'select_dropdown_option': {'index': 0, 'text': 'http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml'}}]}, 'id': '', 'type': 'tool_call'}]
+
+ HumanMessage 
+Action result: 🔍  Searched for "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml" in Google
+
+ HumanMessage 
+Current url: https://www.google.com/search?q=http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml&udm=14
+Available tabs:
+[TabInfo(page_id=0, url='https://www.google.com/search?q=http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml&udm=14', title='http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml - Google Search')]
+Interactive elements from current page view:
+... Cut off - use extract content or scroll to get more ...
+_[:]Accessibility links
+_[:]Skip to main content
+_[:]Accessibility help
+_[:]Accessibility feedback
+0[:]<a title="Go to Google Home"></a>
+1[:]<textarea value="http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml" aria-label="Search" placeholder="" aria-expanded="false" name="q" role="combobox"></textarea>
+2[:]<div tabindex="0" aria-label="Clear" role="button"></div>
+3[:]<div aria-label="Search by voice" role="button" tabindex="0"></div>
+4[:]<div aria-label="Search by image" role="button" tabindex="0"></div>
+5[:]<button aria-label="Search" type="submit"></button>
+6[:]<div aria-label="Settings" role="button" tabindex="0"></div>
+7[:]<a aria-label="Google apps" aria-expanded="false" role="button" tabindex="0"></a>
+8[:]<a aria-label="Sign in">Sign in</a>
+_[:]Filters and topics
+9[:]<a role="link">All</a>
+10[:]<a role="link">Flights</a>
+11[:]<a role="link">Finance</a>
+12[:]<a role="link">Books</a>
+13[:]<a role="link" tabindex="-1">Web</a>
+14[:]<a role="link">Images</a>
+15[:]<a role="link">Videos</a>
+16[:]<div aria-expanded="false" role="button" tabindex="0">More</div>
+17[:]<div aria-expanded="false" role="button" tabindex="0">Tools</div>
+_[:]Search Results
+18[:]<a >SwaggerUI XSS vulnerability · Issue #2494
+GitHub
+https://github.com
+› Swashbuckle.AspNetCore › issues</a>
+19[:]<img alt=""></img>
+20[:]<div aria-label="About this result" role="button" tabindex="0"></div>
+_[:]7 Sept 2022
+_[:]—
+_[:]1-Open the
+_[:]SwaggerAPI link
+_[:]:
+_[:]http
+_[:]://localhost:xxxxx/
+_[:]swagger
+_[:]/index.
+_[:]html
+_[:]2-Add the request parameter: ?configUrl=
+_[:]https
+_[:]://
+_[:]jumpy
+_[:]-
+_[:]floor
+_[:].
+_[:]surge
+_[:].
+_[:]sh
+_[:]/
+_[:]test
+_[:].
+_[:]Missing:
+_[:]model-
+_[:]‎
+_[:]metastore.
+_[:]‎
+_[:]meeshogcp.
+21[:]<a >HTML injection in Swashbuckle swagger UI · Issue #2594
+GitHub
+https://github.com
+› Swashbuckle.AspNetCore › issues</a>
+22[:]<img alt=""></img>
+23[:]<div aria-label="About this result" role="button" tabindex="0"></div>
+_[:]21 Jan 2023
+_[:]—
+_[:]I found
+_[:]HTML
+_[:]injection can be possible in Swashbuckle
+_[:]swagger UI
+_[:], please find the below steps to reproduce the issue: Open any
+_[:]swagger UI
+_[:], ...
+_[:]Missing:
+_[:]model-
+_[:]‎
+_[:]metastore.
+_[:]‎
+_[:]meeshogcp.
+_[:]‎
+_[:]yaml
+24[:]<a >Jayesh Madnani - X
+x.com
+https://x.com
+› Jayesh25_ › status</a>
+25[:]<img alt=""></img>
+26[:]<div aria-label="About this result" role="button" tabindex="0"></div>
+_[:]6 Nov 2023
+_[:]—
+_[:]If you come across an outdated
+_[:]Swagger
+_[:]instance, always remember to
+_[:]test
+_[:]for XSS vulnerabilities. Try these payloads and earn some quick bounties!
+_[:]Missing:
+_[:]model-
+_[:]‎
+_[:]metastore.
+_[:]‎
+_[:]meeshogcp.
+27[:]<a >Swagger-UI XSS - cbioportal.org‏‏‏‏‏‏
+Google Groups
+https://groups.google.com
+› cbioportal</a>
+28[:]<img alt=""></img>
+29[:]<div aria-label="About this result" role="button" tabindex="0"></div>
+_[:]25 Aug 2022
+_[:]—
+_[:]Swagger UI
+_[:]is a really common library used to display API specifications in a nice-looking
+_[:]UI
+_[:]used by almost every company.
+_[:]Missing:
+_[:]model-
+_[:]‎
+_[:]metastore.
+_[:]‎
+_[:]meeshogcp.
+_[:]‎
+_[:]yaml
+30[:]<a >XSS, Swagger UI, and Java - A Story in Three Parts
+smarpo.com
+https://smarpo.com
+› posts › 2022-06-15-springfox-xss-...</a>
+31[:]<img alt=""></img>
+32[:]<div aria-label="About this result" role="button" tabindex="0"></div>
+_[:]15 Jun 2022
+_[:]—
+_[:]If you are using Springfox and allowing the
+_[:]Swagger UI
+_[:]to be accessible, your app is vulnerable to a Reflected XSS attack.
+... Cut off - use extract content or scroll to get more ...
+
+ RESPONSE
+{
+  "current_state": {
+    "evaluation_previous_goal": "Failed - The search did not lead directly to the specified URL.",
+    "memory": "Need to navigate to the specified URL to complete the task.",
+    "next_goal": "Open the specified URL directly in a new tab."
+  },
+  "action": [
+    {
+      "search_google": null,
+      "go_to_url": null,
+      "go_back": null,
+      "click_element": null,
+      "input_text": null,
+      "switch_tab": null,
+      "open_tab": {
+        "url": "http://model-metastore.meeshogcp.in/swagger-ui.html?url=https://jumpy-floor.surge.sh/test.yaml"
+      },
+      "extract_content": null,
+      "done": null,
+      "scroll_down": null,
+      "scroll_up": null,
+      "send_keys": null,
+      "scroll_to_text": null,
+      "get_dropdown_options": null,
+      "select_dropdown_option": null
+    }
+  ]
+}
