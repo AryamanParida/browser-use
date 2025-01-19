@@ -182,6 +182,7 @@ class Agent:
 				self._save_conversation(input_messages, model_output)
 				self.message_manager._remove_last_state_message()  # we dont want the whole state in the chat history
 				self.message_manager.add_model_output(model_output)
+				
 			except Exception as e:
 				# model call failed, remove last state message from history
 				self.message_manager._remove_last_state_message()
@@ -427,13 +428,13 @@ class Agent:
 					errors=self.history.errors(),
 				)
 			)
-			if not self.injected_browser_context:
-				# await self.browser_context.close()
-				print("not closing context")
+			# if not self.injected_browser_context:
+			# 	# await self.browser_context.close()
+			# 	print("not closing context")
 
-			if not self.injected_browser and self.browser:
-				# await self.browser.close()
-				print("not closing browser")
+			# if not self.injected_browser and self.browser:
+			# 	# await self.browser.close()
+			# 	print("not closing browser")
 
 			# if self.generate_gif:
 			# 	self.create_history_gif()
