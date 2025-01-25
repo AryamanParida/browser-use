@@ -154,7 +154,7 @@ class Agent:
 		self.max_failures = max_failures
 		self.retry_delay = retry_delay
 		self.validate_output = validate_output
-
+		self.current_html: Optional[str] = None
 		if save_conversation_path:
 			logger.info(f'Saving conversation to {save_conversation_path}')
 
@@ -165,6 +165,10 @@ class Agent:
 		# Create output model with the dynamic actions
 		self.AgentOutput = AgentOutput.type_with_custom_actions(self.ActionModel)
 
+	def get_current_html(self) -> Optional[str]:
+		"""Get the current HTML content of the webpage."""
+		return self.current_html
+	
 	@time_execution_async('--step')
 	async def step(self, step_info: Optional[AgentStepInfo] = None) -> None:
 		"""Execute one step of the task"""
@@ -175,6 +179,7 @@ class Agent:
 
 		try:
 			state = await self.browser_context.get_state(use_vision=self.use_vision)
+			self.current_html = await self.browser_context.get_page_html()
 			self.message_manager.add_state_message(state, self._last_result, step_info)
 			input_messages = self.message_manager.get_messages()
 			try:
