@@ -181,7 +181,7 @@ class Agent:
 		self.task_completed = False
 		self.eval=None
 		self.memory=None
-		self.next_goal=None
+		self.next_goal=None		self.current_html: Optional[str] = None
 		if save_conversation_path:
 			logger.info(f'Saving conversation to {save_conversation_path}')
 
@@ -223,6 +223,10 @@ class Agent:
 		# Create output model with the dynamic actions
 		self.AgentOutput = AgentOutput.type_with_custom_actions(self.ActionModel)
 
+	def get_current_html(self) -> Optional[str]:
+		"""Get the current HTML content of the webpage."""
+		return self.current_html
+	
 	def set_tool_calling_method(self, tool_calling_method: Optional[str]) -> Optional[str]:
 		if tool_calling_method == 'auto':
 			if self.chat_model_library == 'ChatGoogleGenerativeAI':
@@ -256,6 +260,7 @@ class Agent:
 			if await self._check_for_dialog_in_dom():
 				logger.info("Custom HTML dialog detected in the DOM.")
 
+			self.current_html = await self.browser_context.get_page_html()
 			self.message_manager.add_state_message(state, self._last_result, step_info, self.use_vision)
 			input_messages = self.message_manager.get_messages()
 
