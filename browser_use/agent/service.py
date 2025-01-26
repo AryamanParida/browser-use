@@ -513,9 +513,8 @@ class Agent:
 			if not self.injected_browser_context:
 				await self.browser_context.close()
 
-			# if not self.injected_browser and self.browser:
-			# 	# await self.browser.close()
-			# 	print("not closing browser")
+			if not self.injected_browser and self.browser:
+				await self.browser.close()
 
 			if self.generate_gif:
 				output_path: str = 'agent_history.gif'
