@@ -167,7 +167,12 @@ class Agent:
 		self.max_failures = max_failures
 		self.retry_delay = retry_delay
 		self.validate_output = validate_output
-		self.initial_actions = self._convert_initial_actions(initial_actions) if initial_actions else None
+		self.initial_actions = self._convert_initial_actions(initial_actions) if initial_actions else None		
+		self.task_completed = False
+		self.eval=None
+		self.memory=None
+		self.next_goal=None		
+		self.current_html: Optional[str] = None
 		if save_conversation_path:
 			logger.info(f'Saving conversation to {save_conversation_path}')
 
@@ -209,6 +214,10 @@ class Agent:
 		# Create output model with the dynamic actions
 		self.AgentOutput = AgentOutput.type_with_custom_actions(self.ActionModel)
 
+	def get_current_html(self) -> Optional[str]:
+		"""Get the current HTML content of the webpage."""
+		return self.current_html
+	
 	def set_tool_calling_method(self, tool_calling_method: Optional[str]) -> Optional[str]:
 		if tool_calling_method == 'auto':
 			if self.chat_model_library == 'ChatGoogleGenerativeAI':
@@ -220,6 +229,7 @@ class Agent:
 			else:
 				return None
 
+
 	@time_execution_async('--step')
 	async def step(self, step_info: Optional[AgentStepInfo] = None) -> None:
 		"""Execute one step of the task"""
@@ -230,11 +240,10 @@ class Agent:
 
 		try:
 			state = await self.browser_context.get_state(use_vision=self.use_vision)
-
+			self.current_html = await self.browser_context.get_page_html()
 			if self._stopped or self._paused:
 				logger.debug('Agent paused after getting state')
 				raise InterruptedError
-
 			self.message_manager.add_state_message(state, self._last_result, step_info)
 			input_messages = self.message_manager.get_messages()
 
@@ -252,6 +261,7 @@ class Agent:
 					raise InterruptedError
 
 				self.message_manager.add_model_output(model_output)
+				
 			except Exception as e:
 				# model call failed, remove last state message from history
 				self.message_manager._remove_last_state_message()
@@ -374,6 +384,7 @@ class Agent:
 		# cut the number of actions to max_actions_per_step
 		parsed.action = parsed.action[: self.max_actions_per_step]
 		self._log_response(parsed)
+		self.Agent_Output=parsed
 		self.n_steps += 1
 
 		return parsed
@@ -388,8 +399,11 @@ class Agent:
 			emoji = '🤷'
 
 		logger.info(f'{emoji} Eval: {response.current_state.evaluation_previous_goal}')
+		self.eval=response.current_state.evaluation_previous_goal
 		logger.info(f'🧠 Memory: {response.current_state.memory}')
+		self.memory=response.current_state.evaluation_previous_goal
 		logger.info(f'🎯 Next goal: {response.current_state.next_goal}')
+		self.next_goal=response.current_state.next_goal
 		for i, action in enumerate(response.action):
 			logger.info(f'🛠️  Action {i + 1}/{len(response.action)}: {action.model_dump_json(exclude_unset=True)}')
 
@@ -476,11 +490,13 @@ class Agent:
 							continue
 
 					logger.info('✅ Task completed successfully')
+					self.task_completed=True
 					if self.register_done_callback:
 						self.register_done_callback(self.history)
 					break
 			else:
 				logger.info('❌ Failed to complete task in maximum steps')
+				self.task_completed=False
 
 			return self.history
 		finally:
@@ -511,6 +527,7 @@ class Agent:
 		"""Check if we should stop due to too many failures"""
 		if self.consecutive_failures >= self.max_failures:
 			logger.error(f'❌ Stopping due to {self.max_failures} consecutive failures')
+			self.task_completed=False
 			return True
 		return False
 
