@@ -34,7 +34,7 @@ task_memory_collection = chroma_client.get_or_create_collection(name="task_memor
 key = os.getenv("key", "")
 print(key)
 OPENAPI_KEY = SecretStr(key)
-llm = ChatOpenAI(model='gpt-4o', temperature=0.0, api_key=OPENAPI_KEY)
+llm = ChatOpenAI(model='gpt-4o-mini', temperature=0.0, api_key=OPENAPI_KEY)
 # llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.0, api_key=OPENAPI_KEY)
 
 global_context = None
@@ -159,12 +159,9 @@ async def execute_task(task: str, use_global_context: bool):
 async def execute_task_endpoint(task_request: TaskRequest):
     try:
         result = await execute_task(task_request.task, task_request.use_global_context)
-        agent_brain=result["agent_brain"]
         eval1=""
         memory1=""
         nextgoal1=""
-        print("agent_brain")
-        print(agent_brain.__dict__)
         # if agent_brain is not None:
         #     eval1=agent_brain.current_state.evaluation_previous_goal
         #     memory1=agent_brain.current_state.memory
