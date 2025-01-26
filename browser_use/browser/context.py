@@ -140,6 +140,7 @@ class BrowserContext:
 
 		# Initialize these as None - they'll be set up when needed
 		self.session: BrowserSession | None = None
+		self.dialog_info = []
 
 	async def __aenter__(self):
 		"""Async context manager entry"""
@@ -262,7 +263,17 @@ class BrowserContext:
 				record_video_size=self.config.browser_window_size,
 				locale=self.config.locale,
 			)
-
+		async def handle_dialog(dialog):
+			current_url = self.session.current_page.url if self.session else "Unknown URL"
+			logger.info(f"Dialog detected: {dialog.message}")
+			dialog_obj={
+				"exists":True,
+				"message":dialog.message,
+				'url': current_url,
+			}
+			self.dialog_info.append(dialog_obj)
+			await dialog.accept()  
+		context.on('dialog', handle_dialog)
 		if self.config.trace_path:
 			await context.tracing.start(screenshots=True, snapshots=True, sources=True)
 
@@ -309,6 +320,7 @@ class BrowserContext:
 			})();
 			"""
 		)
+
 
 		return context
 
