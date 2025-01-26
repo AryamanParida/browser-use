@@ -228,13 +228,6 @@ class Agent:
 				return 'function_calling'
 			else:
 				return None
-	async def _check_for_dialog_in_dom(self) -> bool:
-		"""Check if a custom HTML dialog is present in the DOM."""
-		page = await self.browser_context.get_current_page()
-		dialog_elements = await page.query_selector_all('dialog, .modal, .dialog')
-		logger.info("dialog_elements")
-		logger.info(dialog_elements)
-		return len(dialog_elements) > 0
 
 
 	@time_execution_async('--step')
@@ -251,9 +244,6 @@ class Agent:
 			if self._stopped or self._paused:
 				logger.debug('Agent paused after getting state')
 				raise InterruptedError
-			if await self._check_for_dialog_in_dom():
-				logger.info("Custom HTML dialog detected in the DOM.")
-
 			self.message_manager.add_state_message(state, self._last_result, step_info)
 			input_messages = self.message_manager.get_messages()
 
