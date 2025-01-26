@@ -171,7 +171,8 @@ class Agent:
 		self.task_completed = False
 		self.eval=None
 		self.memory=None
-		self.next_goal=None
+		self.next_goal=None		
+		self.current_html: Optional[str] = None
 		if save_conversation_path:
 			logger.info(f'Saving conversation to {save_conversation_path}')
 
@@ -213,6 +214,10 @@ class Agent:
 		# Create output model with the dynamic actions
 		self.AgentOutput = AgentOutput.type_with_custom_actions(self.ActionModel)
 
+	def get_current_html(self) -> Optional[str]:
+		"""Get the current HTML content of the webpage."""
+		return self.current_html
+	
 	def set_tool_calling_method(self, tool_calling_method: Optional[str]) -> Optional[str]:
 		if tool_calling_method == 'auto':
 			if self.chat_model_library == 'ChatGoogleGenerativeAI':
@@ -242,7 +247,7 @@ class Agent:
 
 		try:
 			state = await self.browser_context.get_state(use_vision=self.use_vision)
-			print("reached here 1")
+			self.current_html = await self.browser_context.get_page_html()
 			if self._stopped or self._paused:
 				logger.debug('Agent paused after getting state')
 				raise InterruptedError
@@ -266,6 +271,7 @@ class Agent:
 					raise InterruptedError
 
 				self.message_manager.add_model_output(model_output)
+				
 			except Exception as e:
 				# model call failed, remove last state message from history
 				self.message_manager._remove_last_state_message()
@@ -517,8 +523,9 @@ class Agent:
 			if not self.injected_browser_context:
 				await self.browser_context.close()
 
-			if not self.injected_browser and self.browser:
-				await self.browser.close()
+			# if not self.injected_browser and self.browser:
+			# 	# await self.browser.close()
+			# 	print("not closing browser")
 
 			if self.generate_gif:
 				output_path: str = 'agent_history.gif'
