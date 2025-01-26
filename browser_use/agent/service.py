@@ -167,7 +167,11 @@ class Agent:
 		self.max_failures = max_failures
 		self.retry_delay = retry_delay
 		self.validate_output = validate_output
-		self.initial_actions = self._convert_initial_actions(initial_actions) if initial_actions else None
+		self.initial_actions = self._convert_initial_actions(initial_actions) if initial_actions else None		
+		self.task_completed = False
+		self.eval=None
+		self.memory=None
+		self.next_goal=None
 		if save_conversation_path:
 			logger.info(f'Saving conversation to {save_conversation_path}')
 
@@ -219,6 +223,14 @@ class Agent:
 				return 'function_calling'
 			else:
 				return None
+	async def _check_for_dialog_in_dom(self) -> bool:
+		"""Check if a custom HTML dialog is present in the DOM."""
+		page = await self.browser_context.get_current_page()
+		dialog_elements = await page.query_selector_all('dialog, .modal, .dialog')
+		logger.info("dialog_elements")
+		logger.info(dialog_elements)
+		return len(dialog_elements) > 0
+
 
 	@time_execution_async('--step')
 	async def step(self, step_info: Optional[AgentStepInfo] = None) -> None:
@@ -230,10 +242,12 @@ class Agent:
 
 		try:
 			state = await self.browser_context.get_state(use_vision=self.use_vision)
-
+			print("reached here 1")
 			if self._stopped or self._paused:
 				logger.debug('Agent paused after getting state')
 				raise InterruptedError
+			if await self._check_for_dialog_in_dom():
+				logger.info("Custom HTML dialog detected in the DOM.")
 
 			self.message_manager.add_state_message(state, self._last_result, step_info)
 			input_messages = self.message_manager.get_messages()
@@ -374,6 +388,7 @@ class Agent:
 		# cut the number of actions to max_actions_per_step
 		parsed.action = parsed.action[: self.max_actions_per_step]
 		self._log_response(parsed)
+		self.Agent_Output=parsed
 		self.n_steps += 1
 
 		return parsed
@@ -388,8 +403,11 @@ class Agent:
 			emoji = '🤷'
 
 		logger.info(f'{emoji} Eval: {response.current_state.evaluation_previous_goal}')
+		self.eval=response.current_state.evaluation_previous_goal
 		logger.info(f'🧠 Memory: {response.current_state.memory}')
+		self.memory=response.current_state.evaluation_previous_goal
 		logger.info(f'🎯 Next goal: {response.current_state.next_goal}')
+		self.next_goal=response.current_state.next_goal
 		for i, action in enumerate(response.action):
 			logger.info(f'🛠️  Action {i + 1}/{len(response.action)}: {action.model_dump_json(exclude_unset=True)}')
 
@@ -476,11 +494,13 @@ class Agent:
 							continue
 
 					logger.info('✅ Task completed successfully')
+					self.task_completed=True
 					if self.register_done_callback:
 						self.register_done_callback(self.history)
 					break
 			else:
 				logger.info('❌ Failed to complete task in maximum steps')
+				self.task_completed=False
 
 			return self.history
 		finally:
@@ -511,6 +531,7 @@ class Agent:
 		"""Check if we should stop due to too many failures"""
 		if self.consecutive_failures >= self.max_failures:
 			logger.error(f'❌ Stopping due to {self.max_failures} consecutive failures')
+			self.task_completed=False
 			return True
 		return False
 
