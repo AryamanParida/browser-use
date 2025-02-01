@@ -244,6 +244,7 @@ class Agent:
 	def add_new_task(self, new_task: str) -> None:
 		self.message_manager.add_new_task(new_task)
 
+
 	@time_execution_async('--step')
 	async def step(self, step_info: Optional[AgentStepInfo] = None) -> None:
 		"""Execute one step of the task"""
