@@ -32,7 +32,6 @@ chroma_client = chromadb.Client()
 task_memory_collection = chroma_client.get_or_create_collection(name="task_memory")
 
 key = os.getenv("key", "")
-print(key)
 OPENAPI_KEY = SecretStr(key)
 llm = ChatOpenAI(model='gpt-4o-mini', temperature=0.0, api_key=OPENAPI_KEY)
 # llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.0, api_key=OPENAPI_KEY)
