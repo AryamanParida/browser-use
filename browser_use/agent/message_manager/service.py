@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import List, Optional, Type
+from typing import Dict, List, Optional, Type
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
@@ -38,6 +38,7 @@ class MessageManager:
 		max_error_length: int = 400,
 		max_actions_per_step: int = 10,
 		message_context: Optional[str] = None,
+		sensitive_data: Optional[Dict[str, str]] = None,
 	):
 		self.llm = llm
 		self.system_prompt_class = system_prompt_class
@@ -50,7 +51,7 @@ class MessageManager:
 		self.include_attributes = include_attributes
 		self.max_error_length = max_error_length
 		self.message_context = message_context
-
+		self.sensitive_data = sensitive_data
 		system_message = self.system_prompt_class(
 			self.action_descriptions,
 			current_date=datetime.now(),
@@ -66,6 +67,13 @@ class MessageManager:
 
 		task_message = self.task_instructions(task)
 		self._add_message_with_tokens(task_message)
+
+		if self.sensitive_data:
+			info = f'Here are placeholders for sensitve data: {list(self.sensitive_data.keys())}'
+			info += 'To use them, write <secret>the placeholder name</secret>'
+			info_message = HumanMessage(content=info)
+			self._add_message_with_tokens(info_message)
+
 		self.tool_id = 1
 		tool_calls = [
 			{
@@ -93,6 +101,7 @@ class MessageManager:
 			tool_call_id=str(self.tool_id),
 		)
 		self._add_message_with_tokens(tool_message)
+
 		self.tool_id += 1
 
 	@staticmethod
@@ -100,11 +109,19 @@ class MessageManager:
 		content = f'Your ultimate task is: {task}. If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.'
 		return HumanMessage(content=content)
 
+	def add_new_task(self, new_task: str) -> None:
+		content = (
+			f'Your new ultimate task is: {new_task}. Take the previous context into account and finish your new ultimate task. '
+		)
+		msg = HumanMessage(content=content)
+		self._add_message_with_tokens(msg)
+
 	def add_state_message(
 		self,
 		state: BrowserState,
 		result: Optional[List[ActionResult]] = None,
 		step_info: Optional[AgentStepInfo] = None,
+		use_vision=True,
 	) -> None:
 		"""Add browser state as human message"""
 
@@ -127,7 +144,7 @@ class MessageManager:
 			include_attributes=self.include_attributes,
 			max_error_length=self.max_error_length,
 			step_info=step_info,
-		).get_user_message()
+		).get_user_message(use_vision)
 		self._add_message_with_tokens(state_message)
 
 	def _remove_last_state_message(self) -> None:
@@ -176,9 +193,33 @@ class MessageManager:
 
 	def _add_message_with_tokens(self, message: BaseMessage) -> None:
 		"""Add message with token count metadata"""
+
+		# filter out sensitive data from the message
+		if self.sensitive_data:
+			message = self._filter_sensitive_data(message)
+
 		token_count = self._count_tokens(message)
 		metadata = MessageMetadata(input_tokens=token_count)
 		self.history.add_message(message, metadata)
+
+	def _filter_sensitive_data(self, message: BaseMessage) -> BaseMessage:
+		"""Filter out sensitive data from the message"""
+
+		def replace_sensitive(value: str) -> str:
+			if not self.sensitive_data:
+				return value
+			for key, val in self.sensitive_data.items():
+				value = value.replace(val, f'<secret>{key}</secret>')
+			return value
+
+		if isinstance(message.content, str):
+			message.content = replace_sensitive(message.content)
+		elif isinstance(message.content, list):
+			for i, item in enumerate(message.content):
+				if isinstance(item, dict) and 'text' in item:
+					item['text'] = replace_sensitive(item['text'])
+					message.content[i] = item
+		return message
 
 	def _count_tokens(self, message: BaseMessage) -> int:
 		"""Count tokens in a message using the model's tokenizer"""
@@ -288,7 +329,10 @@ class MessageManager:
 			if isinstance(message, HumanMessage):
 				streak += 1
 				if streak > 1:
-					merged_messages[-1].content += message.content
+					if isinstance(message.content, list):
+						merged_messages[-1].content += message.content[0]['text']
+					else:
+						merged_messages[-1].content += message.content
 				else:
 					merged_messages.append(message)
 			else:
@@ -300,7 +344,7 @@ class MessageManager:
 		"""Extract JSON from model output, handling both plain JSON and code-block-wrapped JSON."""
 		try:
 			# If content is wrapped in code blocks, extract just the JSON part
-			if content.startswith('```'):
+			if '```' in content:
 				# Find the JSON content between code blocks
 				content = content.split('```')[1]
 				# Remove language identifier if present (e.g., 'json\n')
@@ -309,5 +353,5 @@ class MessageManager:
 			# Parse the cleaned content
 			return json.loads(content)
 		except json.JSONDecodeError as e:
-			logger.warning(f'Failed to parse model output: {str(e)}')
+			logger.warning(f'Failed to parse model output: {content} {str(e)}')
 			raise ValueError('Could not parse response.')

@@ -4,9 +4,9 @@ description = "Make websites accessible for AI agents"
 authors = [
     { name = "Gregor Zunic" }
 ]
-version = "0.1.29"
+version = "0.1.32"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
