@@ -86,7 +86,6 @@ class TaskRequest(BaseModel):
 async def execute_task(task: str, use_global_context: bool):
     global global_context
     global agent
-
     browser = Browser()
     print("task")
     print(task)
