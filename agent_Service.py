@@ -86,6 +86,7 @@ class TaskRequest(BaseModel):
 
 async def execute_task(task: str, use_global_context: bool):
     global global_context
+    global agent
     browser = Browser()
     print("task")
     print(task)
@@ -154,6 +155,37 @@ async def execute_task(task: str, use_global_context: bool):
             "memory":memory,
             "next_goal":next_goal,
         }
+
+@app.get("/current-page")
+async def current_page():
+    try:
+        if agent is None:
+            return {
+                "msg":"No agent found",
+                "current_web_page":"",
+                "current_markdown":""
+            }
+        else:
+            current_html = agent.get_current_html()
+            with open("a1.html","w") as f:
+                f.write(current_html)
+            if current_html:
+                cleaned_html = clean_html(current_html)
+                markdown_content = html_to_markdown(cleaned_html)
+                return {
+                "msg":"Agent and current html found",
+                "current_web_page":cleaned_html,
+                "current_markdown":markdown_content
+            }
+            else:
+                return {
+                    "msg":"Agent found but no current html found",
+                    "current_web_page":"",
+                    "current_markdown":""
+                }
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/execute-task")
 async def execute_task_endpoint(task_request: TaskRequest):
