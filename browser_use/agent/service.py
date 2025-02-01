@@ -259,8 +259,8 @@ class Agent:
 			if self._stopped or self._paused:
 				logger.debug('Agent paused after getting state')
 				raise InterruptedError
-			if await self._check_for_dialog_in_dom():
-				logger.info("Custom HTML dialog detected in the DOM.")
+			# if await self._check_for_dialog_in_dom():
+			# 	logger.info("Custom HTML dialog detected in the DOM.")
 
 			self.current_html = await self.browser_context.get_page_html()
 			self.message_manager.add_state_message(state, self._last_result, step_info, self.use_vision)
