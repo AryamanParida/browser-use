@@ -23,7 +23,6 @@ from browser_use.browser.context import BrowserContextConfig
 
 app = FastAPI()
 
-# Getting the primary monitor's width and height for the browser full screen
 monitor = get_monitors()[0]
 screen_width = monitor.width
 screen_height = monitor.height
@@ -32,10 +31,9 @@ chroma_client = chromadb.Client()
 task_memory_collection = chroma_client.get_or_create_collection(name="task_memory")
 
 key = os.getenv("key", "")
-print(key)
+
 OPENAPI_KEY = SecretStr(key)
 llm = ChatOpenAI(model='gpt-4o-mini', temperature=0.0, api_key=OPENAPI_KEY)
-# llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.0, api_key=OPENAPI_KEY)
 
 global_context = None
 global_agent = None 
@@ -87,6 +85,7 @@ class TaskRequest(BaseModel):
 async def execute_task(task: str, use_global_context: bool):
     global global_context
     global agent
+
     browser = Browser()
     print("task")
     print(task)
@@ -194,10 +193,6 @@ async def execute_task_endpoint(task_request: TaskRequest):
         eval1=""
         memory1=""
         nextgoal1=""
-        # if agent_brain is not None:
-        #     eval1=agent_brain.current_state.evaluation_previous_goal
-        #     memory1=agent_brain.current_state.memory
-            # nextgoal1=agent_brain.current_state.next_goal
         if result["success"]:
             return {
                 "message": "Task executed successfully",

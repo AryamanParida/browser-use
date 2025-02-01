@@ -181,7 +181,8 @@ class Agent:
 		self.task_completed = False
 		self.eval=None
 		self.memory=None
-		self.next_goal=None		self.current_html: Optional[str] = None
+		self.next_goal=None		
+    self.current_html: Optional[str] = None
 		if save_conversation_path:
 			logger.info(f'Saving conversation to {save_conversation_path}')
 
@@ -243,6 +244,7 @@ class Agent:
 	def add_new_task(self, new_task: str) -> None:
 		self.message_manager.add_new_task(new_task)
 
+
 	@time_execution_async('--step')
 	async def step(self, step_info: Optional[AgentStepInfo] = None) -> None:
 		"""Execute one step of the task"""
@@ -262,6 +264,7 @@ class Agent:
 
 			self.current_html = await self.browser_context.get_page_html()
 			self.message_manager.add_state_message(state, self._last_result, step_info, self.use_vision)
+
 			input_messages = self.message_manager.get_messages()
 
 			try:
