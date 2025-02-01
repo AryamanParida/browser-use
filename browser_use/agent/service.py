@@ -181,7 +181,8 @@ class Agent:
 		self.task_completed = False
 		self.eval=None
 		self.memory=None
-		self.next_goal=None		self.current_html: Optional[str] = None
+		self.next_goal=None		
+		self.current_html: Optional[str] = None
 		if save_conversation_path:
 			logger.info(f'Saving conversation to {save_conversation_path}')
 
