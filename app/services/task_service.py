@@ -13,7 +13,7 @@ global_context = None
 global_agent = None
 proxy = ProxySettings(server=settings.PROXY_URL)
 
-llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.0, api_key=settings.OPENAPI_KEY)
+llm = ChatOpenAI(model='gpt-4o-mini', temperature=0.0, api_key=settings.OPENAPI_KEY)
 
 async def execute_task(task: str, use_global_context: bool):
     global global_context, global_agent
