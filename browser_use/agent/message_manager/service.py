@@ -54,7 +54,6 @@ class MessageManager:
 		self.sensitive_data = sensitive_data
 		system_message = self.system_prompt_class(
 			self.action_descriptions,
-			current_date=datetime.now(),
 			max_actions_per_step=max_actions_per_step,
 		).get_system_message()
 
@@ -62,7 +61,7 @@ class MessageManager:
 		self.system_prompt = system_message
 
 		if self.message_context:
-			context_message = HumanMessage(content=self.message_context)
+			context_message = HumanMessage(content='Context for the task' + self.message_context)
 			self._add_message_with_tokens(context_message)
 
 		task_message = self.task_instructions(task)
@@ -74,17 +73,21 @@ class MessageManager:
 			info_message = HumanMessage(content=info)
 			self._add_message_with_tokens(info_message)
 
+		placeholder_message = HumanMessage(content='Example output:')
+		self._add_message_with_tokens(placeholder_message)
+
 		self.tool_id = 1
 		tool_calls = [
 			{
 				'name': 'AgentOutput',
 				'args': {
 					'current_state': {
-						'evaluation_previous_goal': 'Unknown - No previous actions to evaluate.',
-						'memory': '',
-						'next_goal': 'Start browser',
+						'page_summary': 'On the page are company a,b,c wtih their revenue 1,2,3.',
+						'evaluation_previous_goal': 'Success - I opend the first page',
+						'memory': 'Starting with the new task. I have completed 1/10 steps',
+						'next_goal': 'Click on company a',
 					},
-					'action': [],
+					'action': [{'click_element': {'index': 0}}],
 				},
 				'id': str(self.tool_id),
 				'type': 'tool_call',
@@ -104,17 +107,28 @@ class MessageManager:
 
 		self.tool_id += 1
 
+		placeholder_message = HumanMessage(content='[Your task history memory starts here]')
+		self._add_message_with_tokens(placeholder_message)
+
 	@staticmethod
 	def task_instructions(task: str) -> HumanMessage:
-		content = f'Your ultimate task is: {task}. If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.'
+		content = f'Your ultimate task is: """{task}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.'
 		return HumanMessage(content=content)
 
-	def add_new_task(self, new_task: str) -> None:
-		content = (
-			f'Your new ultimate task is: {new_task}. Take the previous context into account and finish your new ultimate task. '
-		)
+	def add_file_paths(self, file_paths: list[str]) -> None:
+		content = f'Here are file paths you can use: {file_paths}'
 		msg = HumanMessage(content=content)
 		self._add_message_with_tokens(msg)
+
+	def add_new_task(self, new_task: str) -> None:
+		content = f'Your new ultimate task is: """{new_task}""". Take the previous context into account and finish your new ultimate task. '
+		msg = HumanMessage(content=content)
+		self._add_message_with_tokens(msg)
+
+	def add_plan(self, plan: Optional[str], position: Optional[int] = None) -> None:
+		if plan:
+			msg = AIMessage(content=plan)
+			self._add_message_with_tokens(msg, position)
 
 	def add_state_message(
 		self,
@@ -191,7 +205,7 @@ class MessageManager:
 
 		return msg
 
-	def _add_message_with_tokens(self, message: BaseMessage) -> None:
+	def _add_message_with_tokens(self, message: BaseMessage, position: Optional[int] = None) -> None:
 		"""Add message with token count metadata"""
 
 		# filter out sensitive data from the message
@@ -200,7 +214,7 @@ class MessageManager:
 
 		token_count = self._count_tokens(message)
 		metadata = MessageMetadata(input_tokens=token_count)
-		self.history.add_message(message, metadata)
+		self.history.add_message(message, metadata, position)
 
 	def _filter_sensitive_data(self, message: BaseMessage) -> BaseMessage:
 		"""Filter out sensitive data from the message"""
@@ -321,12 +335,12 @@ class MessageManager:
 				raise ValueError(f'Unknown message type: {type(message)}')
 		return output_messages
 
-	def merge_successive_human_messages(self, messages: list[BaseMessage]) -> list[BaseMessage]:
+	def merge_successive_messages(self, messages: list[BaseMessage], class_to_merge: Type[BaseMessage]) -> list[BaseMessage]:
 		"""Some models like deepseek-reasoner dont allow multiple human messages in a row. This function merges them into one."""
 		merged_messages = []
 		streak = 0
 		for message in messages:
-			if isinstance(message, HumanMessage):
+			if isinstance(message, class_to_merge):
 				streak += 1
 				if streak > 1:
 					if isinstance(message.content, list):
