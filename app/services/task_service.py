@@ -8,12 +8,14 @@ from browser_use.browser.context import BrowserContextConfig
 from playwright._impl._api_structures import ProxySettings
 from app.core.utils import clean_html,html_to_markdown
 import os
+from pydantic import SecretStr
+
+api_key = SecretStr(settings.OPENAPI_KEY)
 
 global_context = None
 agent = None
 proxy = ProxySettings(server=settings.PROXY_URL)
-
-llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0.0, api_key=settings.OPENAPI_KEY)
+llm = ChatOpenAI(model='gpt-4o-mini', temperature=0.0, api_key=api_key)
 
 async def execute_task(task: str, use_global_context: bool):
     global global_context, agent
@@ -44,7 +46,7 @@ async def execute_task(task: str, use_global_context: bool):
     )
 
     await agent.run(5)
-    current_html = agent.get_current_html()
+    current_html = agent.get_current_html() or ""
     with open("current.html","w") as f:
         f.write(current_html)
     browser_context = agent.browser_context

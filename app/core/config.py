@@ -5,6 +5,6 @@ load_dotenv()
 
 class Settings:
     OPENAPI_KEY: str = os.getenv("OPENAPI_KEY", "")
-    PROXY_URL: str = os.getenv("PROXY_URL", "http://localhost:8080")
+    PROXY_URL: str = os.getenv("PROXY_URL", "http://localhost:9090")
 
 settings = Settings()
