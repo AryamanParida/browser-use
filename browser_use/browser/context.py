@@ -329,7 +329,8 @@ class BrowserContext:
 				locale=self.config.locale,
 			)
 		async def handle_dialog(dialog):
-			current_url = self.session.current_page.url if self.session else "Unknown URL"
+			current_page = await self.get_current_page()
+			current_url = current_page.url if self.session else "Unknown URL"
 			logger.info(f"Dialog detected: {dialog.message}")
 			dialog_obj={
 				"exists":True,
@@ -337,7 +338,7 @@ class BrowserContext:
 				'url': current_url,
 			}
 			self.dialog_info.append(dialog_obj)
-			await dialog.accept()  
+			await dialog.accept()
 		context.on('dialog', handle_dialog)
 		if self.config.trace_path:
 			await context.tracing.start(screenshots=True, snapshots=True, sources=True)
@@ -385,7 +386,6 @@ class BrowserContext:
             })();
             """
 		)
-
 
 		return context
 
@@ -686,24 +686,24 @@ class BrowserContext:
 		debug_script = """(() => {
 			function getPageStructure(element = document, depth = 0, maxDepth = 10) {
 				if (depth >= maxDepth) return '';
-				
+
 				const indent = '  '.repeat(depth);
 				let structure = '';
-				
+
 				// Skip certain elements that clutter the output
 				const skipTags = new Set(['script', 'style', 'link', 'meta', 'noscript']);
-				
+
 				// Add current element info if it's not the document
 				if (element !== document) {
 					const tagName = element.tagName.toLowerCase();
-					
+
 					// Skip uninteresting elements
 					if (skipTags.has(tagName)) return '';
-					
+
 					const id = element.id ? `#${element.id}` : '';
-					const classes = element.className && typeof element.className === 'string' ? 
+					const classes = element.className && typeof element.className === 'string' ?
 						`.${element.className.split(' ').filter(c => c).join('.')}` : '';
-					
+
 					// Get additional useful attributes
 					const attrs = [];
 					if (element.getAttribute('role')) attrs.push(`role="${element.getAttribute('role')}"`);
@@ -714,10 +714,10 @@ class BrowserContext:
 						const src = element.getAttribute('src');
 						attrs.push(`src="${src.substring(0, 50)}${src.length > 50 ? '...' : ''}"`);
 					}
-					
+
 					// Add element info
 					structure += `${indent}${tagName}${id}${classes}${attrs.length ? ' [' + attrs.join(', ') + ']' : ''}\\n`;
-					
+
 					// Handle iframes specially
 					if (tagName === 'iframe') {
 						try {
@@ -733,7 +733,7 @@ class BrowserContext:
 						}
 					}
 				}
-				
+
 				// Get all child elements
 				const children = element.children || element.childNodes;
 				for (const child of children) {
@@ -741,10 +741,10 @@ class BrowserContext:
 						structure += getPageStructure(child, depth + 1, maxDepth);
 					}
 				}
-				
+
 				return structure;
 			}
-			
+
 			return getPageStructure();
 		})()"""
 

@@ -220,7 +220,7 @@ class Agent(Generic[Context]):
 		self.task_completed = False
 		self.eval=None
 		self.memory=None
-		self.next_goal=None		
+		self.next_goal=None
 		self.current_html: Optional[str] = None
 
 		self.context = context
@@ -294,6 +294,7 @@ class Agent(Generic[Context]):
 		self.ActionModel = self.controller.registry.create_action_model()
 		# Create output model with the dynamic actions
 		self.AgentOutput = AgentOutput.type_with_custom_actions(self.ActionModel)
+
 		# used to force the done action when max_steps is reached
 		self.DoneActionModel = self.controller.registry.create_action_model(include_actions=['done'])
 		self.DoneAgentOutput = AgentOutput.type_with_custom_actions(self.DoneActionModel)
@@ -320,7 +321,6 @@ class Agent(Generic[Context]):
 
 	def add_new_task(self, new_task: str) -> None:
 		self._message_manager.add_new_task(new_task)
-
 
 	async def _raise_if_stopped_or_paused(self) -> None:
 		"""Utility function that raises an InterruptedError if the agent is stopped or paused."""
@@ -384,7 +384,6 @@ class Agent(Generic[Context]):
 					save_conversation(input_messages, model_output, target, self.settings.save_conversation_path_encoding)
 
 				self._message_manager._remove_last_state_message()  # we dont want the whole state in the chat history
-
 
 				await self._raise_if_stopped_or_paused()
 
