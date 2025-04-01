@@ -13,12 +13,16 @@ global_context = None
 agent = None
 proxy = ProxySettings(server=settings.PROXY_URL)
 
-llm = ChatOpenAI(model='gpt-4o-mini', temperature=0.0, api_key=settings.OPENAPI_KEY)
+llm = ChatOpenAI(model='gpt-4o', temperature=0.0, api_key=settings.OPENAPI_KEY)
 
-async def execute_task(task: str, use_global_context: bool):
+async def execute_task(task: str, use_global_context: bool, feature: str | None = None):
     global global_context, agent
 
-    browser_config = BrowserConfig(proxy=proxy)
+    print(f"Feature: {feature}")
+
+    # browser_config = BrowserConfig(proxy=proxy, chrome_instance_path="chrome_instance_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+    # browser = Browser()
+    browser_config = BrowserConfig(chrome_instance_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
     browser = Browser(config=browser_config)
 
     if use_global_context and global_context:
@@ -27,7 +31,8 @@ async def execute_task(task: str, use_global_context: bool):
         context = await browser.new_context(
             config=BrowserContextConfig(
                 trace_path="./tmp/traces/",
-                browser_window_size={'width': 1920, 'height': 1080},
+                # cookies_file="/Users/ayushsingh/Documents/programming/browser-use/cookies.json",
+                browser_window_size={'width': 1920, 'height': 1080}
             )
         )
         if use_global_context:
@@ -39,11 +44,12 @@ async def execute_task(task: str, use_global_context: bool):
         use_vision=False,
         browser_context=context,
         # save_conversation_path="./save",
-        max_failures=3,
+        max_failures=5,
         browser=browser,
+        feature=feature,
     )
 
-    await agent.run(5)
+    await agent.run(25)
     current_html = agent.get_current_html()
     with open("current.html","w") as f:
         f.write(current_html)
@@ -57,20 +63,25 @@ async def execute_task(task: str, use_global_context: bool):
     eval_prev_goal=agent.eval
     memory=agent.memory
     next_goal=agent.next_goal
+    result=agent._last_result
+    completed_functionalities=agent.completed_functionalities
 
     if agent_task_status:
         if current_html:
             cleaned_html = clean_html(current_html)
             markdown_content = html_to_markdown(cleaned_html)
             return {
-                "html_content": cleaned_html,
-                "markdown_content": markdown_content,
+                # "html_content": cleaned_html,
+                # "markdown_content": markdown_content,
                 "dialog_box":dialog_box,
                 "success": True,
                 "eval":eval_prev_goal,
                 "memory":memory,
                 "next_goal":next_goal,
                 "message": "Task completed successfully",
+                "result": result,
+                "completed_functionalities": completed_functionalities,
+                "feature": feature
             }
     else:
         return {
@@ -82,6 +93,8 @@ async def execute_task(task: str, use_global_context: bool):
             "eval":eval_prev_goal,
             "memory":memory,
             "next_goal":next_goal,
+            "result": result,
+            "feature": feature
         }
 
 async def get_current_page():

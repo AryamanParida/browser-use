@@ -42,6 +42,28 @@ class AgentBrain(BaseModel):
 	memory: str
 	next_goal: str
 
+class Functionalities(BaseModel):
+	"""Outputs all the functionalities on the given page related to the given feature that might be interesting from the Security perspective to test before going to production
+		If some functionalities seems duplicate and you are confident then you are supposed to only include them once.
+	"""
+
+	name: str
+	description: str
+	
+	def model_dump(self, **kwargs):
+		return {"name": self.name, "description": self.description}
+
+class FunctionalitiesOutput(BaseModel):
+	"""Output state for functionalities on a page wrt to the given feature"""
+    
+	url: str
+	functionalities: list[Functionalities]
+	
+	def model_dump(self, **kwargs):
+		return {
+			"url": self.url, 
+			"functionalities": [f.model_dump() for f in self.functionalities]
+		}
 
 class AgentOutput(BaseModel):
 	"""Output model for agent

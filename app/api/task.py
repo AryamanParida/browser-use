@@ -6,7 +6,8 @@ router = APIRouter()
 @router.post("/execute-task")
 async def execute_task_endpoint(task_request: TaskRequest):
     try:
-        result = await execute_task(task_request.task, task_request.use_global_context)
+        result = await execute_task(task_request.task, task_request.use_global_context, task_request.feature)
+        return result
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))

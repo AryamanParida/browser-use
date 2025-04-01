@@ -43,6 +43,13 @@ class SendKeysAction(BaseModel):
 	keys: str
 
 
+class MarkFunctionalityCompletedAction(BaseModel):
+	"""Used to mark a functionality as completed"""
+	name: str  # Name of the functionality
+	description: str  # Description of what was completed
+	success: bool = True  # Whether it was successfully completed
+
+
 class NoParamsAction(BaseModel):
 	"""
 	Accepts absolutely anything in the incoming data

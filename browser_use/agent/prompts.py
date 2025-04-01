@@ -49,6 +49,9 @@ class SystemPrompt:
        {"go_to_url": {"url": "https://example.com"}},
        {"extract_page_content": {}}
      ]
+   - Tracking completed functionalities: [
+       {"mark_functionality_completed": {"name": "Login Form", "description": "Found login form with username/password fields and submit button"}}
+     ]
 
 
 3. ELEMENT INTERACTION:
@@ -97,6 +100,14 @@ class SystemPrompt:
 
 10. Extraction:
 - If your task is to find information or do research - call extract_page_content on the specific pages to get and store the information.
+
+11. Functionality Tracking:
+- When you are tasked to explore all functionalities for some features on a website, you should use the mark_functionality_completed
+- As you explore the website, use mark_functionality_completed to track each functionality you discover
+- This helps create a comprehensive list of available functionalities across the entire feature in the website
+- You should mark each functionality as completed only once per website, even if you see it on multiple pages
+- Functionalities are tracked by website domain (e.g., example.com), not by individual page URLs
+- Always include detailed descriptions to help distinguish similar functionalities on different pages
 
 """
 		text += f'   - use maximum {self.max_actions_per_step} actions per sequence'
@@ -259,3 +270,88 @@ Ignore the other AI messages output structures.
 
 Keep your responses concise and focused on actionable insights."""
 		)
+
+class FunctionalityMessagePrompt(AgentMessagePrompt):
+	def __init__(
+		self,
+		state: BrowserState,
+		result: Optional[List[ActionResult]] = None,
+		include_attributes: list[str] = [],
+		max_error_length: int = 400,
+		step_info: Optional[AgentStepInfo] = None,
+	):
+		self.state = state
+		self.result = result
+		self.max_error_length = max_error_length
+		self.include_attributes = include_attributes
+		self.step_info = step_info
+
+	def get_user_message(self, use_vision: bool = True, feature: str | None = None) -> HumanMessage:
+		elements_text = self.state.element_tree.clickable_elements_to_string(include_attributes=self.include_attributes)
+
+		has_content_above = (self.state.pixels_above or 0) > 0
+		has_content_below = (self.state.pixels_below or 0) > 0
+
+		if elements_text != '':
+			if has_content_above:
+				elements_text = (
+					f'... {self.state.pixels_above} pixels above - scroll or extract content to see more ...\n{elements_text}'
+				)
+			else:
+				elements_text = f'[Start of page]\n{elements_text}'
+			if has_content_below:
+				elements_text = (
+					f'{elements_text}\n... {self.state.pixels_below} pixels below - scroll or extract content to see more ...'
+				)
+			else:
+				elements_text = f'{elements_text}\n[End of page]'
+		else:
+			elements_text = 'empty page'
+
+		if self.step_info:
+			step_info_description = f'Current step: {self.step_info.step_number + 1}/{self.step_info.max_steps}'
+		else:
+			step_info_description = ''
+		time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+		step_info_description += f'Current date and time: {time_str}'
+
+		state_description = f"""
+		[Task history memory ends here]
+		[Current state starts here]
+
+		Your task is to determine if the current web page corresponds to the specified feature and, if so, list its interactive functionalities to help map the attack surface for security testing.
+
+		1.  **Analyze:** Based on the URL and interactive elements, are we currently on the page for the '{feature}'?
+		2.  **If YES:** List all interactive elements and potential user actions (buttons, forms, input fields, links triggering actions, API endpoints if inferrable) found on this page that are strictly related to the '{feature}'. Focus on potential interaction points relevant to security.
+		3.  **If NO:** Respond ONLY with the exact text: "Not on the feature page".
+
+		Feature: {feature}
+		Current url: {self.state.url}
+		Interactive elements from current page:
+		{elements_text}
+
+		[Current state ends here]
+		"""
+
+		if self.result:
+			for i, result in enumerate(self.result):
+				if result.extracted_content:
+					state_description += f'\nAction result {i + 1}/{len(self.result)}: {result.extracted_content}'
+				if result.error:
+					# only use last 300 characters of error
+					error = result.error[-self.max_error_length :]
+					state_description += f'\nAction error {i + 1}/{len(self.result)}: ...{error}'
+
+		if self.state.screenshot and use_vision == True:
+			# Format message for vision model
+			return HumanMessage(
+				content=[
+					{'type': 'text', 'text': state_description},
+					{
+						'type': 'image_url',
+						'image_url': {'url': f'data:image/png;base64,{self.state.screenshot}'},
+					},
+				]
+			)
+
+		return HumanMessage(content=state_description)

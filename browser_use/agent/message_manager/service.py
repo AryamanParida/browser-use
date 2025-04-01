@@ -17,7 +17,7 @@ from langchain_core.messages import (
 from langchain_openai import ChatOpenAI
 
 from browser_use.agent.message_manager.views import MessageHistory, MessageMetadata
-from browser_use.agent.prompts import AgentMessagePrompt, SystemPrompt
+from browser_use.agent.prompts import AgentMessagePrompt, SystemPrompt, FunctionalityMessagePrompt
 from browser_use.agent.views import ActionResult, AgentOutput, AgentStepInfo
 from browser_use.browser.views import BrowserState
 
@@ -160,6 +160,31 @@ class MessageManager:
 			step_info=step_info,
 		).get_user_message(use_vision)
 		self._add_message_with_tokens(state_message)
+
+	def add_functionality_state_message(
+		self,
+		state: BrowserState,
+		result: Optional[List[ActionResult]] = None,
+		step_info: Optional[AgentStepInfo] = None,
+		use_vision=True,
+		feature: str | None = None,
+	) -> BaseMessage:
+		"""Add browser state as human message with focus on page functionality"""
+		
+		# Create functionality focused message using specialized prompt class
+		state_message = FunctionalityMessagePrompt(
+			state,
+			result,
+			include_attributes=self.include_attributes,
+			step_info=step_info,
+		).get_user_message(use_vision, feature)
+		
+		# Add the message to the history
+		return state_message
+
+	def add_functionality_explanation(self, functionality_explanation: str) -> None:
+		msg = HumanMessage(content=functionality_explanation)
+		self._add_message_with_tokens(msg)
 
 	def _remove_last_state_message(self) -> None:
 		"""Remove last state message from history"""

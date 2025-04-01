@@ -37,6 +37,7 @@ from browser_use.agent.views import (
 	AgentHistoryList,
 	AgentOutput,
 	AgentStepInfo,
+	FunctionalitiesOutput
 )
 from browser_use.browser.browser import Browser
 from browser_use.browser.context import BrowserContext
@@ -68,6 +69,7 @@ class Agent:
 		llm: BaseChatModel,
 		browser: Browser | None = None,
 		browser_context: BrowserContext | None = None,
+		feature: str | None = None,
 		controller: Controller = Controller(),
 		use_vision: bool = True,
 		use_vision_for_planner: bool = False,
@@ -123,6 +125,9 @@ class Agent:
 		self.include_attributes = include_attributes
 		self.max_error_length = max_error_length
 		self.generate_gif = generate_gif
+		
+		# Initialize completed functionalities tracking
+		self.completed_functionalities = []
 
 		# Initialize planner
 		self.planner_llm = planner_llm
@@ -159,6 +164,9 @@ class Agent:
 		self._setup_action_models()
 		self._set_version_and_source()
 		self.max_input_tokens = max_input_tokens
+
+		# Feature setup
+		self.feature = feature
 
 		self._set_model_names()
 
@@ -287,6 +295,41 @@ class Agent:
 			state = await self.browser_context.get_state()
 
 			self._check_if_stopped_or_paused()
+
+			# Will just add the functionalities for this url in the state history and tell the agent to explore all the functionalities 
+			functionality_prompt = self.message_manager.add_functionality_state_message(state, self._last_result, step_info, self.use_vision, self.feature)
+
+			structured_llm = self.llm.with_structured_output(FunctionalitiesOutput, include_raw=True)
+			response: dict[str, Any] = await structured_llm.ainvoke([functionality_prompt])  # type: ignore
+			parsed: FunctionalitiesOutput | None = response['parsed']
+			print('--------------------------------')
+			print(parsed)
+			print('--------------------------------')
+
+			# Add explanatory message about the identified interaction points
+			functionality_explanation = (
+				f"Attack Surface Identified for '{self.feature}': The previous step listed the key interactive elements for this feature on the current page. "
+				"Your task now is to systematically interact with and explore each of these points during your traversal. "
+				"Think of this list as your target checklist for security coverage. "
+				"Once you have thoroughly interacted with a listed functionality (e.g., submitted a form, clicked a button and analyzed the result, tested input fields), mark it as 'completed'. "
+				"Your goal is to achieve comprehensive interaction coverage of all listed elements.\n\n"
+			)
+			
+			if parsed:
+				self.message_manager.add_functionality_explanation(functionality_explanation + str(parsed))
+			else:
+				self.message_manager.add_functionality_explanation(functionality_explanation + "No functionalities detected on this page.")
+
+			# Add information about completed functionalities before adding the state message
+			completed_functionalities = await self.functionalities_completed_for_current_page()
+				
+			completed_msg = f"Previously identified functionalities related to the given feature by the user for this website ({completed_functionalities})\n"
+			self.message_manager._add_message_with_tokens(HumanMessage(content=completed_msg))
+
+			print('--------------------------------')
+			print(completed_msg)
+			print('--------------------------------')
+			
 			self.message_manager.add_state_message(state, self._last_result, step_info, self.use_vision)
 
 			self.current_html = await self.browser_context.get_page_html()
@@ -326,6 +369,7 @@ class Agent:
 				sensitive_data=self.sensitive_data,
 				check_break_if_paused=lambda: self._check_if_stopped_or_paused(),
 				available_file_paths=self.available_file_paths,
+				agent_context=self,
 			)
 			self._last_result = result
 
@@ -521,7 +565,7 @@ class Agent:
 					f.write(message.content.strip() + '\n')
 
 			f.write('\n')
-
+				
 	def _write_response_to_file(self, f: Any, response: Any) -> None:
 		"""Write model response to conversation file"""
 		f.write(' RESPONSE\n')
@@ -544,6 +588,41 @@ class Agent:
 			)
 		)
 
+	def get_completed_functionalities(self) -> list[dict]:
+		"""Get list of completed functionalities, optionally filtered by domain
+		
+		Args:
+			domain: Optional domain to filter by (e.g., "example.com")
+			
+		Returns:
+			List of completed functionality dictionaries with keys:
+			- name: The functionality name
+			- description: Description of what was completed
+			- success: Whether it was successfully completed
+			- timestamp: When it was marked as completed
+			- url: The URL where it was completed
+		"""
+		return self.completed_functionalities
+		
+	async def functionalities_completed_for_current_page(self) -> list[dict]:
+		"""Get list of completed functionalities for the current website domain
+		
+		Returns:
+			List of completed functionality dictionaries for the current website
+		"""
+		
+		# Extract domain from URL
+		from urllib.parse import urlparse
+		try:
+			return self.completed_functionalities
+		except:
+			# If parsing fails, return all functionalities
+			return self.completed_functionalities
+		
+	def reset_completed_functionalities(self) -> None:
+		"""Reset the list of completed functionalities"""
+		self.completed_functionalities = []
+
 	@observe(name='agent.run', ignore_output=True)
 	async def run(self, max_steps: int = 100) -> AgentHistoryList:
 		"""Execute the task with maximum number of steps"""
@@ -559,6 +638,7 @@ class Agent:
 					page_extraction_llm=self.page_extraction_llm,
 					check_break_if_paused=lambda: self._check_if_stopped_or_paused(),
 					available_file_paths=self.available_file_paths,
+					agent_context=self,
 				)
 				self._last_result = result
 
@@ -701,6 +781,7 @@ class Agent:
 				page_extraction_llm=self.page_extraction_llm,
 				check_break_if_paused=lambda: self._check_if_stopped_or_paused(),
 				available_file_paths=self.available_file_paths,
+				agent_context=self,
 			)
 
 		results = []
@@ -761,6 +842,7 @@ class Agent:
 			self.browser_context,
 			page_extraction_llm=self.page_extraction_llm,
 			check_break_if_paused=lambda: self._check_if_stopped_or_paused(),
+			agent_context=self,
 		)
 
 		await asyncio.sleep(delay)

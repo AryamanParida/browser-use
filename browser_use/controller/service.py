@@ -1,7 +1,9 @@
 import asyncio
 import json
 import logging
-from typing import Callable, Dict, Optional, Type
+from typing import Callable, Dict, Optional, Type, Any
+from datetime import datetime
+from urllib.parse import urlparse
 
 from langchain_core.prompts import PromptTemplate
 from lmnr import Laminar, observe
@@ -21,6 +23,7 @@ from browser_use.controller.views import (
 	SearchGoogleAction,
 	SendKeysAction,
 	SwitchTabAction,
+	MarkFunctionalityCompletedAction,
 )
 from browser_use.utils import time_execution_async, time_execution_sync
 
@@ -433,6 +436,33 @@ class Controller:
 				logger.error(msg)
 				return ActionResult(error=msg, include_in_memory=True)
 
+		@self.registry.action('ACTION: Mark Functionality Completed. Call this immediately AFTER you have finished interacting with and exploring ONE specific functionality from your target list. Provide the name/ID of the functionality you just completed. Essential for tracking coverage.', param_model=MarkFunctionalityCompletedAction)
+		async def mark_functionality_completed(params: MarkFunctionalityCompletedAction, browser: BrowserContext, agent_context: Any):
+			# Import Agent locally to avoid circular dependency
+			from browser_use.agent.service import Agent
+			
+			# The browser_context is actually the agent instance when called from the agent
+			
+			# Get the agent context
+			if isinstance(agent_context, Agent):
+					
+				# Add to the agent's completed functionalities list
+				agent_context.completed_functionalities.append({
+					'name': params.name,
+					'description': params.description,
+					'success': params.success,
+					'timestamp': datetime.now().isoformat(),
+				})
+				msg = f"✅ Marked functionality '{params.name}' as completed"
+				if not params.success:
+					msg = f"❌ Marked functionality '{params.name}' as attempted but unsuccessful"
+				logger.info(msg)
+				return ActionResult(extracted_content=msg, include_in_memory=True)
+			else:
+				msg = "Could not mark functionality as completed - agent context not available"
+				logger.error(msg)
+				return ActionResult(error=msg, include_in_memory=True)
+
 	def action(self, description: str, **kwargs):
 		"""Decorator for registering custom actions
 
@@ -451,6 +481,7 @@ class Controller:
 		page_extraction_llm: Optional[BaseChatModel] = None,
 		sensitive_data: Optional[Dict[str, str]] = None,
 		available_file_paths: Optional[list[str]] = None,
+		agent_context: Optional[Any] = None,
 	) -> list[ActionResult]:
 		"""Execute multiple actions"""
 		results = []
@@ -478,7 +509,7 @@ class Controller:
 
 			check_break_if_paused()
 
-			results.append(await self.act(action, browser_context, page_extraction_llm, sensitive_data, available_file_paths))
+			results.append(await self.act(action, browser_context, page_extraction_llm, sensitive_data, available_file_paths, agent_context))
 
 			logger.debug(f'Executed action {i + 1} / {len(actions)}')
 			if results[-1].is_done or results[-1].error or i == len(actions) - 1:
@@ -497,6 +528,7 @@ class Controller:
 		page_extraction_llm: Optional[BaseChatModel] = None,
 		sensitive_data: Optional[Dict[str, str]] = None,
 		available_file_paths: Optional[list[str]] = None,
+		agent_context: Optional[Any] = None,
 	) -> ActionResult:
 		"""Execute an action"""
 
@@ -518,6 +550,7 @@ class Controller:
 							page_extraction_llm=page_extraction_llm,
 							sensitive_data=sensitive_data,
 							available_file_paths=available_file_paths,
+							agent_context=agent_context,
 						)
 
 						Laminar.set_span_output(result)
