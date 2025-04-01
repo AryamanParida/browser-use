@@ -170,7 +170,7 @@ class MessageManager:
 		feature: str | None = None,
 	) -> BaseMessage:
 		"""Add browser state as human message with focus on page functionality"""
-		
+
 		# Create functionality focused message using specialized prompt class
 		state_message = FunctionalityMessagePrompt(
 			state,
@@ -178,7 +178,7 @@ class MessageManager:
 			include_attributes=self.include_attributes,
 			step_info=step_info,
 		).get_user_message(use_vision, feature)
-		
+
 		# Add the message to the history
 		return state_message
 

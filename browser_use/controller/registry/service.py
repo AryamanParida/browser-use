@@ -117,7 +117,7 @@ class Registry:
 				raise ValueError(f'Action {action_name} requires available_file_paths but none provided.')
 			if 'agent_context' in parameter_names and not agent_context:
 				raise ValueError(f'Action {action_name} requires agent_context but none provided.')
-				
+
 			# Prepare arguments based on parameter type
 			extra_args = {}
 			if 'browser' in parameter_names:
@@ -128,7 +128,7 @@ class Registry:
 				extra_args['available_file_paths'] = available_file_paths
 			if 'agent_context' in parameter_names:
 				extra_args['agent_context'] = agent_context
-				
+
 			if is_pydantic:
 				return await action.function(validated_params, **extra_args)
 			return await action.function(**validated_params.model_dump(), **extra_args)

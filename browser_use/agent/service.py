@@ -125,7 +125,7 @@ class Agent:
 		self.include_attributes = include_attributes
 		self.max_error_length = max_error_length
 		self.generate_gif = generate_gif
-		
+
 		# Initialize completed functionalities tracking
 		self.completed_functionalities = []
 
@@ -197,11 +197,11 @@ class Agent:
 		self.max_failures = max_failures
 		self.retry_delay = retry_delay
 		self.validate_output = validate_output
-		self.initial_actions = self._convert_initial_actions(initial_actions) if initial_actions else None		
+		self.initial_actions = self._convert_initial_actions(initial_actions) if initial_actions else None
 		self.task_completed = False
 		self.eval=None
 		self.memory=None
-		self.next_goal=None		
+		self.next_goal=None
 		self.current_html: Optional[str] = None
 		if save_conversation_path:
 			logger.info(f'Saving conversation to {save_conversation_path}')
@@ -259,7 +259,7 @@ class Agent:
 	def get_current_html(self) -> Optional[str]:
 		"""Get the current HTML content of the webpage."""
 		return self.current_html
-	
+
 	def set_tool_calling_method(self, tool_calling_method: Optional[str]) -> Optional[str]:
 		if tool_calling_method == 'auto':
 			if self.chat_model_library == 'ChatGoogleGenerativeAI':
@@ -296,7 +296,7 @@ class Agent:
 
 			self._check_if_stopped_or_paused()
 
-			# Will just add the functionalities for this url in the state history and tell the agent to explore all the functionalities 
+			# Will just add the functionalities for this url in the state history and tell the agent to explore all the functionalities
 			functionality_prompt = self.message_manager.add_functionality_state_message(state, self._last_result, step_info, self.use_vision, self.feature)
 
 			structured_llm = self.llm.with_structured_output(FunctionalitiesOutput, include_raw=True)
@@ -314,7 +314,7 @@ class Agent:
 				"Once you have thoroughly interacted with a listed functionality (e.g., submitted a form, clicked a button and analyzed the result, tested input fields), mark it as 'completed'. "
 				"Your goal is to achieve comprehensive interaction coverage of all listed elements.\n\n"
 			)
-			
+
 			if parsed:
 				self.message_manager.add_functionality_explanation(functionality_explanation + str(parsed))
 			else:
@@ -322,14 +322,14 @@ class Agent:
 
 			# Add information about completed functionalities before adding the state message
 			completed_functionalities = await self.functionalities_completed_for_current_page()
-				
+
 			completed_msg = f"Previously identified functionalities related to the given feature by the user for this website ({completed_functionalities})\n"
 			self.message_manager._add_message_with_tokens(HumanMessage(content=completed_msg))
 
 			print('--------------------------------')
 			print(completed_msg)
 			print('--------------------------------')
-			
+
 			self.message_manager.add_state_message(state, self._last_result, step_info, self.use_vision)
 
 			self.current_html = await self.browser_context.get_page_html()
@@ -356,7 +356,7 @@ class Agent:
 				self._check_if_stopped_or_paused()
 
 				self.message_manager.add_model_output(model_output)
-				
+
 			except Exception as e:
 				# model call failed, remove last state message from history
 				self.message_manager._remove_last_state_message()
@@ -565,7 +565,7 @@ class Agent:
 					f.write(message.content.strip() + '\n')
 
 			f.write('\n')
-				
+
 	def _write_response_to_file(self, f: Any, response: Any) -> None:
 		"""Write model response to conversation file"""
 		f.write(' RESPONSE\n')
@@ -590,10 +590,10 @@ class Agent:
 
 	def get_completed_functionalities(self) -> list[dict]:
 		"""Get list of completed functionalities, optionally filtered by domain
-		
+
 		Args:
 			domain: Optional domain to filter by (e.g., "example.com")
-			
+
 		Returns:
 			List of completed functionality dictionaries with keys:
 			- name: The functionality name
@@ -603,14 +603,14 @@ class Agent:
 			- url: The URL where it was completed
 		"""
 		return self.completed_functionalities
-		
+
 	async def functionalities_completed_for_current_page(self) -> list[dict]:
 		"""Get list of completed functionalities for the current website domain
-		
+
 		Returns:
 			List of completed functionality dictionaries for the current website
 		"""
-		
+
 		# Extract domain from URL
 		from urllib.parse import urlparse
 		try:
@@ -618,7 +618,7 @@ class Agent:
 		except:
 			# If parsing fails, return all functionalities
 			return self.completed_functionalities
-		
+
 	def reset_completed_functionalities(self) -> None:
 		"""Reset the list of completed functionalities"""
 		self.completed_functionalities = []

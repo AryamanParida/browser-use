@@ -49,19 +49,19 @@ class Functionalities(BaseModel):
 
 	name: str
 	description: str
-	
+
 	def model_dump(self, **kwargs):
 		return {"name": self.name, "description": self.description}
 
 class FunctionalitiesOutput(BaseModel):
 	"""Output state for functionalities on a page wrt to the given feature"""
-    
+
 	url: str
 	functionalities: list[Functionalities]
-	
+
 	def model_dump(self, **kwargs):
 		return {
-			"url": self.url, 
+			"url": self.url,
 			"functionalities": [f.model_dump() for f in self.functionalities]
 		}
 

@@ -108,10 +108,10 @@ async def get_current_page():
         }
     else:
         current_html = agent.get_current_html()
-        if current_html: 
+        if current_html:
             with open("current.html", "w") as f:
                 f.write(current_html)
-            
+
             cleaned_html = clean_html(current_html)
             markdown_content = html_to_markdown(cleaned_html)
             return {

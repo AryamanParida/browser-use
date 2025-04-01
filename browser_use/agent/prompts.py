@@ -69,7 +69,7 @@ class SystemPrompt:
 
 5. TASK COMPLETION:
    - Use the done action as the last action as soon as the ultimate task is complete
-   - Dont use "done" before you are done with everything the user asked you. 
+   - Dont use "done" before you are done with everything the user asked you.
    - If you have to do something repeatedly for example the task says for "each", or "for all", or "x times", count always inside "memory" how many times you have done it and how many remain. Don't stop until you have completed like the task asked you. Only call done after the last step.
    - Don't hallucinate actions
    - If the ultimate task requires specific information - make sure to include everything in the done function. This is what the user will see. Do not just say you are done, but include the requested information of the task.
@@ -96,7 +96,7 @@ class SystemPrompt:
 
 9. Long tasks:
 - If the task is long keep track of the status in the memory. If the ultimate task requires multiple subinformation, keep track of the status in the memory.
-- If you get stuck, 
+- If you get stuck,
 
 10. Extraction:
 - If your task is to find information or do research - call extract_page_content on the specific pages to get and store the information.

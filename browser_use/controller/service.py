@@ -440,12 +440,12 @@ class Controller:
 		async def mark_functionality_completed(params: MarkFunctionalityCompletedAction, browser: BrowserContext, agent_context: Any):
 			# Import Agent locally to avoid circular dependency
 			from browser_use.agent.service import Agent
-			
+
 			# The browser_context is actually the agent instance when called from the agent
-			
+
 			# Get the agent context
 			if isinstance(agent_context, Agent):
-					
+
 				# Add to the agent's completed functionalities list
 				agent_context.completed_functionalities.append({
 					'name': params.name,
