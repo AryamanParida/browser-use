@@ -15,14 +15,14 @@ api_key = SecretStr(settings.OPENAPI_KEY)
 global_context = None
 agent = None
 proxy = ProxySettings(server=settings.PROXY_URL)
-llm = ChatOpenAI(model='gpt-4o-mini', temperature=0.0, api_key=api_key)
+llm = ChatOpenAI(model='gpt-4o', temperature=0.0, api_key=api_key)
 
 async def execute_task(task: str, use_global_context: bool):
     global global_context, agent
 
     browser_config = BrowserConfig(proxy=proxy)
     browser = Browser(config=browser_config)
-
+# TO USE WITHOUT PROXY JUST DO THIS AND COMMENT ABOVE 2 LINES -> browser = Browser()
     if use_global_context and global_context:
         context = global_context
     else:

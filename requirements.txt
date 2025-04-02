@@ -10,3 +10,6 @@ playwright
 # posthog
 html2text
 bs4
+psutil
+mem0ai
+faiss-cpu
